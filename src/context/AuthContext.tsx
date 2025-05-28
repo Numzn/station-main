@@ -3,14 +3,17 @@ import {
   type User,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  setPersistence
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -41,8 +44,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return unsubscribe;
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe: boolean = false) => {
     try {
+      // Set persistence based on rememberMe
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      // Sign in
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
       throw error;
@@ -69,4 +75,4 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       {!loading && children}
     </AuthContext.Provider>
   );
-}; 
+};

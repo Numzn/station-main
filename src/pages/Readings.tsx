@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { saveReadings, getLatestReadings } from '../firebase/firestore';
+import Skeleton from '../components/LoadingSkeleton';
 
 
 interface PumpReading {
@@ -303,10 +304,42 @@ const Readings = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading readings...</p>
+      <div className="space-y-6">
+        {/* Pump Operations Loading */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <Skeleton.Base width="w-1/3" height="h-8" />
+          </div>
+          <div className="space-y-6">
+            {/* Petrol Pumps Loading */}
+            <div>
+              <Skeleton.Base width="w-1/4" className="mb-4" />
+              <Skeleton.Table rows={4} columns={3} />
+            </div>
+            {/* Diesel Pumps Loading */}
+            <div>
+              <Skeleton.Base width="w-1/4" className="mb-4" />
+              <Skeleton.Table rows={4} columns={3} />
+            </div>
+          </div>
+        </div>
+
+        {/* Tank Summary Loading */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Petrol Tank Loading */}
+          <div className="bg-white shadow rounded-lg p-6">
+            <Skeleton.Base width="w-1/3" className="mb-4" />
+            <div className="space-y-4">
+              <Skeleton.Card lines={6} />
+            </div>
+          </div>
+          {/* Diesel Tank Loading */}
+          <div className="bg-white shadow rounded-lg p-6">
+            <Skeleton.Base width="w-1/3" className="mb-4" />
+            <div className="space-y-4">
+              <Skeleton.Card lines={6} />
+            </div>
+          </div>
         </div>
       </div>
     );

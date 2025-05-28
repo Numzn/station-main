@@ -9,6 +9,7 @@ import {
   Bars3Icon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
+import Skeleton from './LoadingSkeleton';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -17,7 +18,7 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
 
   const navigation = [
     { name: 'Home', href: '/dashboard', icon: HomeIcon },
@@ -27,6 +28,35 @@ const Layout = ({ children }: LayoutProps) => {
     { name: 'Shift Roster', href: '/dashboard/shift-roster', icon: CalendarIcon },
     { name: 'Settings', href: '/dashboard/settings', icon: CogIcon },
   ];
+
+  const renderNavigationItem = (item: typeof navigation[0]) => {
+    if (loading) {
+      return (
+        <div key={item.name} className="px-2 py-2">
+          <Skeleton.Base height="h-8" />
+        </div>
+      );
+    }
+
+    return (
+      <Link
+        key={item.name}
+        to={item.href}
+        className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+          location.pathname === item.href
+            ? 'bg-gray-100 text-gray-900'
+            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+        }`}
+      >
+        <item.icon
+          className={`mr-3 h-6 w-6 flex-shrink-0 ${
+            location.pathname === item.href ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500'
+          }`}
+        />
+        {item.name}
+      </Link>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -47,36 +77,25 @@ const Layout = ({ children }: LayoutProps) => {
             </button>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                  location.pathname === item.href
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <item.icon
-                  className={`mr-3 h-6 w-6 flex-shrink-0 ${
-                    location.pathname === item.href ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500'
-                  }`}
-                />
-                {item.name}
-              </Link>
-            ))}
+            {navigation.map(item => renderNavigationItem(item))}
           </nav>
           <div className="border-t border-gray-200 p-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-sm text-gray-500">{user?.email}</span>
-              </div>
-              <button
-                onClick={() => logout()}
-                className="ml-auto text-sm text-red-600 hover:text-red-700"
-              >
-                Logout
-              </button>
+              {loading ? (
+                <Skeleton.Base width="w-32" height="h-6" />
+              ) : (
+                <>
+                  <div className="flex-shrink-0">
+                    <span className="text-sm text-gray-500">{user?.email}</span>
+                  </div>
+                  <button
+                    onClick={() => logout()}
+                    className="ml-auto text-sm text-red-600 hover:text-red-700"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -89,36 +108,25 @@ const Layout = ({ children }: LayoutProps) => {
             <h2 className="text-lg font-semibold text-gray-900">Fuel Station</h2>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                  location.pathname === item.href
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <item.icon
-                  className={`mr-3 h-6 w-6 flex-shrink-0 ${
-                    location.pathname === item.href ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500'
-                  }`}
-                />
-                {item.name}
-              </Link>
-            ))}
+            {navigation.map(item => renderNavigationItem(item))}
           </nav>
           <div className="border-t border-gray-200 p-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-sm text-gray-500">{user?.email}</span>
-              </div>
-              <button
-                onClick={() => logout()}
-                className="ml-auto text-sm text-red-600 hover:text-red-700"
-              >
-                Logout
-              </button>
+              {loading ? (
+                <Skeleton.Base width="w-32" height="h-6" />
+              ) : (
+                <>
+                  <div className="flex-shrink-0">
+                    <span className="text-sm text-gray-500">{user?.email}</span>
+                  </div>
+                  <button
+                    onClick={() => logout()}
+                    className="ml-auto text-sm text-red-600 hover:text-red-700"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

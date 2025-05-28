@@ -1,23 +1,16 @@
-import { getFirestore, doc, setDoc, getDoc, Timestamp, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import app from '../config/firebase';
+import { 
+  doc, 
+  setDoc, 
+  getDoc, 
+  Timestamp, 
+  collection, 
+  query, 
+  orderBy, 
+  limit, 
+  getDocs
+} from 'firebase/firestore';
+import { db } from '../config/firebase';
 
-const db = getFirestore(app);
-
-// Enable offline persistence (DISABLED for debugging connectivity issues)
-// enableIndexedDbPersistence(db)
-//   .then(() => {
-//     console.log('Firestore persistence enabled');
-//   })
-//   .catch((err) => {
-//     console.error('Error enabling persistence:', err);
-//     if (err.code === 'failed-precondition') {
-//       // Multiple tabs open, persistence can only be enabled in one tab at a time
-//       console.warn('Multiple tabs open, persistence only enabled in one tab');
-//     } else if (err.code === 'unimplemented') {
-//       // The current browser does not support all of the features required for persistence
-//       console.warn('This browser does not support persistence');
-//     }
-//   });
 export interface ReadingData {
   date: Timestamp;
   petrolPumps: {

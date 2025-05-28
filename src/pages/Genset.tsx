@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import type { GensetReading } from '../firebase/genset';
 import { saveGensetReading, getLatestGensetReadings } from '../firebase/genset';
+import Skeleton from '../components/LoadingSkeleton';
+import { ExclamationTriangleIcon, ClockIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 
 const Genset = () => {
   const { user } = useAuth();
@@ -86,141 +88,242 @@ const Genset = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="max-w-md mx-auto space-y-6 px-2 py-6">
+        {/* Summary Card Loading */}
+        <div className="bg-blue-50 border-l-4 border-blue-400 rounded p-3 mb-2">
+          <div className="flex flex-col sm:flex-row sm:space-x-8 w-full justify-between items-center">
+            <Skeleton.Card lines={2} />
+            <Skeleton.Card lines={2} />
+          </div>
+        </div>
+
+        {/* Input Form Loading */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <Skeleton.Base width="w-1/3" height="h-8" className="mb-4" />
+          <div className="space-y-4">
+            <Skeleton.Card lines={3} />
+          </div>
+          <div className="mt-4">
+            <Skeleton.Base height="h-10" />
+          </div>
+        </div>
+
+        {/* Recent Readings Loading */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <Skeleton.Base width="w-1/2" height="h-8" className="mb-4" />
+          <div className="overflow-x-auto">
+            <Skeleton.Table rows={5} columns={6} />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto space-y-6 px-2 py-6">
-      {/* Summary Card: Last & Next Refuel */}
-      <div className="bg-blue-50 border-l-4 border-blue-400 rounded p-3 mb-2 flex flex-col items-center">
-        <div className="flex flex-col sm:flex-row sm:space-x-8 w-full justify-between items-center">
-          <div className="flex flex-col items-center flex-1">
-            <span className="text-xs text-gray-700">Last Refuel At</span>
-            <span className="text-lg font-bold text-blue-800">{lastReading ? lastReading.runningHours.toFixed(2) : '--'} hrs</span>
+    <div className="max-w-4xl mx-auto space-y-6 px-4 py-8">
+      {/* Status Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg overflow-hidden">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <ClockIcon className="h-6 w-6 text-blue-600" aria-hidden="true" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Last Refuel At</dt>
+                  <dd className="flex items-baseline">
+                    <div className="text-2xl font-semibold text-gray-900">
+                      {lastReading ? lastReading.runningHours.toFixed(2) : '--'} hrs
+                    </div>
+                  </dd>
+                </dl>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col items-center flex-1">
-            <span className="text-xs text-gray-700">Next Refuel At</span>
-            <span className="text-lg font-bold text-yellow-800">{nextRefuelRunningTime} hrs</span>
+        </div>
+
+        <div className="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg overflow-hidden">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <ChartBarIcon className="h-6 w-6 text-yellow-600" aria-hidden="true" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Next Refuel At</dt>
+                  <dd className="flex items-baseline">
+                    <div className="text-2xl font-semibold text-gray-900">
+                      {nextRefuelRunningTime} hrs
+                    </div>
+                  </dd>
+                </dl>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Step-by-step instructions */}
-      <div className="bg-gray-100 border-l-4 border-gray-400 rounded p-3 mb-2">
-        <ol className="list-decimal list-inside text-gray-700 text-xs sm:text-sm space-y-1">
-          <li>Check the <b>Next Refuel At</b> value above.</li>
-          <li>When the genset hour meter reaches or exceeds this value, refuel with 20L and record the new reading below.</li>
-          <li>Only enter the number shown on the genset hour meter (decimals allowed).</li>
-        </ol>
+      {/* Instructions Card */}
+      <div className="bg-blue-50 shadow-sm ring-1 ring-blue-900/5 rounded-lg overflow-hidden">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-sm font-medium text-blue-800 mb-2">Instructions</h3>
+          <ol className="list-decimal list-inside text-sm text-blue-900 space-y-2">
+            <li>Check the <b>Next Refuel At</b> value above</li>
+            <li>When the genset hour meter reaches or exceeds this value, refuel with 20L</li>
+            <li>Record the new reading using the form below</li>
+          </ol>
+        </div>
       </div>
 
-      <h2 className="text-xl font-bold text-center text-blue-800 mb-2">Genset Refueling Log</h2>
-      <form
-        className="bg-white shadow rounded-lg p-4 space-y-4"
-        onSubmit={e => { e.preventDefault(); handleSubmitReading(); }}
-        autoComplete="off"
-      >
-        <label className="block text-base font-medium text-gray-700 mb-1 text-center">Current Hour Meter Reading</label>
-        <input
-          type="text"
-          inputMode="decimal"
-          pattern="[0-9]*[.,]?[0-9]*"
-          value={currentRunningHours}
-          onChange={e => {
-            const val = e.target.value.replace(',', '.');
-            setCurrentRunningHours(val);
-          }}
-          className="focus:ring-blue-500 focus:border-blue-500 block w-full text-lg border-gray-300 rounded-md py-3 px-4 text-center"
-          placeholder="e.g., 6633.99"
-          style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
-        />
-        {/* Validation feedback */}
-        {lastReading && currentRunningHours && parseFloat(currentRunningHours) <= lastReading.runningHours && (
-          <div className="text-xs text-red-600 text-center">Reading must be greater than last refuel ({lastReading.runningHours.toFixed(2)} hrs)</div>
-        )}
-        <button
-          type="submit"
-          disabled={
-            !currentRunningHours ||
-            !!(lastReading && (isNaN(parseFloat(currentRunningHours)) || parseFloat(currentRunningHours) <= lastReading.runningHours))
-          }
-          className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 transition-all"
-        >
-          Record Reading
-        </button>
-      </form>
+      {/* Input Form */}
+      <div className="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg overflow-hidden">
+        <div className="px-4 py-5 sm:p-6">
+          <h2 className="text-base font-semibold leading-7 text-gray-900 mb-6">Record New Reading</h2>
+          <form onSubmit={e => { e.preventDefault(); handleSubmitReading(); }} autoComplete="off">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium leading-6 text-gray-900">
+                  Current Hour Meter Reading
+                </label>
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*[.,]?[0-9]*"
+                    value={currentRunningHours}
+                    onChange={e => {
+                      const val = e.target.value.replace(',', '.');
+                      setCurrentRunningHours(val);
+                    }}
+                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+                    placeholder="e.g., 6633.99"
+                    style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+                  />
+                </div>
+                {lastReading && currentRunningHours && parseFloat(currentRunningHours) <= lastReading.runningHours && (
+                  <div className="mt-2 flex items-center gap-x-2 text-sm text-red-600">
+                    <ExclamationTriangleIcon className="h-4 w-4" />
+                    <span>Reading must be greater than {lastReading.runningHours.toFixed(2)} hrs</span>
+                  </div>
+                )}
+              </div>
 
-      <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4 text-center">Recent Refueling Log</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date/Time</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Running Hours</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours Since Last</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fuel Added</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fuel Rate (L/hr)</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Operator</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {recentReadings.map((reading, idx) => {
-                const prev = recentReadings[idx + 1];
-                const hoursSincePrev = prev ? (reading.runningHours - prev.runningHours).toFixed(2) : '--';
-                return (
-                  <tr key={idx}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(reading.timestamp).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-800 font-bold">{reading.runningHours.toFixed(2)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{hoursSincePrev}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{reading.fuelAdded} L</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{reading.fuelConsumptionRate ? reading.fuelConsumptionRate.toFixed(2) : '--'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{reading.operator}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+              <div className="flex items-center justify-end">
+                <button
+                  type="submit"
+                  disabled={
+                    !currentRunningHours ||
+                    !!(lastReading && (isNaN(parseFloat(currentRunningHours)) || parseFloat(currentRunningHours) <= lastReading.runningHours))
+                  }
+                  className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  Record Reading
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
-        {/* Mobile stacked cards remain below for small screens */}
-        <div className="sm:hidden space-y-3 mt-4">
+      </div>
+
+      {/* Recent Readings Table */}
+      <div className="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg overflow-hidden">
+        <div className="px-4 py-5 sm:p-6">
+          <div className="sm:flex sm:items-center">
+            <div className="sm:flex-auto">
+              <h2 className="text-base font-semibold leading-7 text-gray-900">Recent Readings</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                A list of all genset readings including running hours and fuel consumption.
+              </p>
+            </div>
+            <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+              <div className="text-sm text-blue-700">
+                Total Fuel This Month: <span className="font-semibold">{totalFuelThisMonth} L</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flow-root">
+            <div className="overflow-x-auto">
+              <div className="inline-block min-w-full align-middle">
+                <table className="min-w-full divide-y divide-gray-300">
+                  <thead>
+                    <tr>
+                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Date/Time</th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Running Hours</th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Hours Since Last</th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Fuel Added</th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Fuel Rate (L/hr)</th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Operator</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {recentReadings.map((reading, idx) => {
+                      const prev = recentReadings[idx + 1];
+                      const hoursSincePrev = prev ? (reading.runningHours - prev.runningHours).toFixed(2) : '--';
+                      return (
+                        <tr key={idx}>
+                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
+                            {new Date(reading.timestamp).toLocaleString()}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-blue-700">
+                            {reading.runningHours.toFixed(2)}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{hoursSincePrev}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{reading.fuelAdded} L</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            {reading.fuelConsumptionRate ? reading.fuelConsumptionRate.toFixed(2) : '--'}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{reading.operator}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile View */}
+        <div className="sm:hidden space-y-4 px-4 py-5">
           {recentReadings.map((reading, idx) => {
             const prev = recentReadings[idx + 1];
             const hoursSincePrev = prev ? (reading.runningHours - prev.runningHours).toFixed(2) : '--';
             return (
-              <div key={idx} className="border rounded-lg p-2 flex flex-col bg-gray-50">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="font-semibold text-gray-600">Date/Time:</span>
-                  <span className="text-gray-900">{new Date(reading.timestamp).toLocaleString()}</span>
+              <div key={idx} className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between items-center border-b border-gray-200 pb-2">
+                  <span className="text-sm font-medium text-gray-500">
+                    {new Date(reading.timestamp).toLocaleString()}
+                  </span>
+                  <span className="text-sm font-semibold text-blue-700">
+                    {reading.runningHours.toFixed(2)} hrs
+                  </span>
                 </div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="font-semibold text-gray-600">Running Hours:</span>
-                  <span className="text-blue-800 font-bold">{reading.runningHours.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="font-semibold text-gray-600">Hours Since Last:</span>
-                  <span className="text-gray-900">{hoursSincePrev}</span>
-                </div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="font-semibold text-gray-600">Fuel Added:</span>
-                  <span className="text-gray-900">{reading.fuelAdded} L</span>
-                </div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="font-semibold text-gray-600">Fuel Rate (L/hr):</span>
-                  <span className="text-gray-900">{reading.fuelConsumptionRate ? reading.fuelConsumptionRate.toFixed(2) : '--'}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="font-semibold text-gray-600">Operator:</span>
-                  <span className="text-gray-900">{reading.operator}</span>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-500">Hours Since Last:</span>
+                    <span className="ml-1 font-medium">{hoursSincePrev}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Fuel Added:</span>
+                    <span className="ml-1 font-medium">{reading.fuelAdded} L</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Fuel Rate:</span>
+                    <span className="ml-1 font-medium">
+                      {reading.fuelConsumptionRate ? reading.fuelConsumptionRate.toFixed(2) : '--'} L/hr
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Operator:</span>
+                    <span className="ml-1 font-medium">{reading.operator}</span>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
-        <div className="mt-4 text-xs text-blue-700 text-center">Total Fuel Used This Month: <span className="font-bold">{totalFuelThisMonth} L</span></div>
       </div>
     </div>
   );

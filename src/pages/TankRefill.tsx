@@ -5,6 +5,7 @@ import { saveTankRefill, getLatestTankRefills } from '../firebase/tankRefill';
 import { TANK_CAPACITY, TANK_MAX_DIP } from '../config/tankConstants';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import Skeleton from '../components/LoadingSkeleton';
 
 const TankRefillPage = () => {
   const { user } = useAuth();
@@ -363,8 +364,20 @@ const TankRefillPage = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="space-y-6">
+        {/* Form Loading */}
+        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+          <Skeleton.Base width="w-1/3" height="h-8" className="mb-6" />
+          <div className="space-y-4">
+            <Skeleton.Card lines={4} />
+          </div>
+        </div>
+        
+        {/* Recent Activity Loading */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <Skeleton.Base width="w-1/4" height="h-8" className="mb-6" />
+          <Skeleton.Table rows={5} columns={7} />
+        </div>
       </div>
     );
   }
