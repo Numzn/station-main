@@ -1,0 +1,8 @@
+{
+  "indexes": [],
+  "fieldOverrides": [],
+  "scripts": {
+    "setup-firestore": "ts-node src/scripts/setupFirestore.ts",
+    "setup-firestore-rules": "ts-node src/scripts/setupFirestoreRules.ts"
+  }
+}
