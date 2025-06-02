@@ -29,14 +29,12 @@ const Readings = () => {
     { opening: 0, closing: 0, sales: 0 },
     { opening: 0, closing: 0, sales: 0 },
   ]);
-
   const [dieselPumps, setDieselPumps] = useState<PumpReading[]>([
     { opening: 0, closing: 0, sales: 0 },
     { opening: 0, closing: 0, sales: 0 },
     { opening: 0, closing: 0, sales: 0 },
     { opening: 0, closing: 0, sales: 0 },
   ]);
-
   const [petrolTank, setPetrolTank] = useState<TankSummary>({
     opening: 0,
     closing: 0,
@@ -46,7 +44,6 @@ const Readings = () => {
     variance: 0,
     meterReading: 0,
   });
-
   const [dieselTank, setDieselTank] = useState<TankSummary>({
     opening: 0,
     closing: 0,
@@ -66,18 +63,22 @@ const Readings = () => {
         console.log('Loading latest readings...');
         const latestReadings = await getLatestReadings();
         if (latestReadings) {
-          setPetrolPumps(latestReadings.petrolPumps);
-          setDieselPumps(latestReadings.dieselPumps);
+          // Use last closing as new opening for each pump
+          setPetrolPumps(latestReadings.petrolPumps.map((pump: PumpReading) => ({
+            opening: pump.closing,
+            closing: 0,
+            sales: 0
+          })));
+          setDieselPumps(latestReadings.dieselPumps.map((pump: PumpReading) => ({
+            opening: pump.closing,
+            closing: 0,
+            sales: 0
+          })));
           setPetrolTank(latestReadings.petrolTank);
           setDieselTank(latestReadings.dieselTank);
-        } else {
-          console.log('No previous readings found, using default values');
-          // Keep the default values that were set in the initial state
         }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load readings';
-        console.error('Error loading readings:', err);
-        setError(errorMessage);
+        setError('Failed to load readings');
       } finally {
         setIsLoading(false);
       }
@@ -86,36 +87,103 @@ const Readings = () => {
     loadReadings();
   }, []);
 
-  // Calculate pump sales totals
-  useEffect(() => {
-    const petrolPumpSales = petrolPumps.reduce((sum, pump) => sum + pump.sales, 0);
-    const dieselPumpSales = dieselPumps.reduce((sum, pump) => sum + pump.sales, 0);
-
-    setPetrolTank(prev => ({
-      ...prev,
-      pumpSales: petrolPumpSales,
-      variance: prev.tankSales - petrolPumpSales
-    }));
-
-    setDieselTank(prev => ({
-      ...prev,
-      pumpSales: dieselPumpSales,
-      variance: prev.tankSales - dieselPumpSales
-    }));
-  }, [petrolPumps, dieselPumps]);
-
-  // Conversion function (replace with real formula as needed)
-  const dipToLiters = (meters: number) => {
-    // Example: 1 meter = 1000 liters
-    return meters * 1000;
+  // When editing, set opening = previous closing, allow closing edit
+  const handleEditReadings = () => {
+    setIsEditing(true);
+    setPetrolPumps(prev => prev.map(pump => ({
+      ...pump,
+      opening: pump.opening || 0,
+      closing: 0,
+      sales: 0
+    })));
+    setDieselPumps(prev => prev.map(pump => ({
+      ...pump,
+      opening: pump.opening || 0,
+      closing: 0,
+      sales: 0
+    })));
   };
 
-  // Update tank closing and tank sales when dip reading changes
+  // Live update difference (sales) as closing is entered
+  const handleClosingChange = (value: string, pumpType: 'petrol' | 'diesel', index: number) => {
+    const formattedValue = formatInputValue(value);
+    const closingValue = parseFloat(formattedValue) || 0;
+    const pumps = pumpType === 'petrol' ? petrolPumps : dieselPumps;
+    const setPumps = pumpType === 'petrol' ? setPetrolPumps : setDieselPumps;
+    const updatedPumps = [...pumps];
+    updatedPumps[index] = {
+      ...updatedPumps[index],
+      closing: closingValue,
+      sales: closingValue - updatedPumps[index].opening
+    };
+    setPumps(updatedPumps);
+  };
+
+  // Update handleUpdateReadings to include validation
+  const handleUpdateReadings = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const timestamp = new Date().toISOString();
+      const readingsData = {
+        petrolPumps: petrolPumps.map(p => ({ ...p, timestamp })),
+        dieselPumps: dieselPumps.map(p => ({ ...p, timestamp })),
+        petrolTank,
+        dieselTank
+      };
+      console.log('Readings data to save:', readingsData);
+
+      // Save to Firestore
+      await saveReadings(readingsData);
+      console.log('Readings saved successfully');
+
+      // After save, set closing as new opening for next shift
+      setPetrolPumps(petrolPumps.map(p => ({ opening: p.closing, closing: 0, sales: 0 })));
+      setDieselPumps(dieselPumps.map(p => ({ opening: p.closing, closing: 0, sales: 0 })));
+      setIsEditing(false);
+      alert('Readings saved successfully!');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save readings';
+      console.error('Error saving readings:', err);
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatInputValue = (value: string) => {
+    // Remove all non-numeric except . and -
+    let numericValue = value.replace(/[^\d.-]/g, '');
+    // Always show leading zero for decimals
+    if (numericValue.startsWith('.')) {
+      numericValue = '0' + numericValue;
+    } else if (numericValue.startsWith('-.')) {
+      numericValue = '-0.' + numericValue.slice(2);
+    }
+    // Remove leading zeros for integers (except for 0 itself)
+    if (/^-?0\d+/.test(numericValue)) {
+      numericValue = numericValue.replace(/^-?0+/, (match) => (match.startsWith('-') ? '-' : ''));
+    }
+    // Handle multiple decimal points
+    const parts = numericValue.split('.');
+    if (parts.length > 2) {
+      numericValue = parts[0] + '.' + parts.slice(1).join('');
+    }
+    // Limit to 3 decimal places
+    if (parts.length === 2 && parts[1].length > 3) {
+      numericValue = parts[0] + '.' + parts[1].slice(0, 3);
+    }
+    return numericValue;
+  };
+
+  // Utility for rounding to 2 decimal places
+  const round2 = (val: number) => Number(val).toFixed(2);
+
+  // Restore dip reading handler for tank summary
   const handleDipReadingChange = (value: string, tankType: 'petrol' | 'diesel') => {
     const formattedValue = formatInputValue(value);
     const meters = parseFloat(formattedValue) || 0;
     const liters = dipToLiters(meters);
-
     if (tankType === 'petrol') {
       setPetrolTank(prev => {
         const newTankSales = prev.opening - liters;
@@ -143,164 +211,11 @@ const Readings = () => {
     }
   };
 
-  const formatInputValue = (value: string) => {
-    // Allow decimal point and numbers
-    if (value === '.') return '0.';
-    if (value === '-.') return '-0.';
-    
-    // Remove any non-numeric characters except decimal point and minus sign
-    const numericValue = value.replace(/[^\d.-]/g, '');
-    
-    // Handle multiple decimal points
-    const parts = numericValue.split('.');
-    if (parts.length > 2) {
-      return parts[0] + '.' + parts.slice(1).join('');
-    }
-    
-    // Limit to 3 decimal places
-    if (parts.length === 2 && parts[1].length > 3) {
-      return parts[0] + '.' + parts[1].slice(0, 3);
-    }
-    
-    return numericValue;
+  // Conversion function (replace with real formula as needed)
+  const dipToLiters = (meters: number) => {
+    // Example: 1 meter = 1000 liters
+    return meters * 1000;
   };
-
-  const handleClosingChange = (value: string, pumpType: 'petrol' | 'diesel', index: number) => {
-    const formattedValue = formatInputValue(value);
-    const closingValue = parseFloat(formattedValue) || 0;
-    const pumps = pumpType === 'petrol' ? petrolPumps : dieselPumps;
-    const setPumps = pumpType === 'petrol' ? setPetrolPumps : setDieselPumps;
-    
-    const updatedPumps = [...pumps];
-    updatedPumps[index] = {
-      ...updatedPumps[index],
-      closing: closingValue,
-      sales: closingValue - updatedPumps[index].opening
-    };
-    
-    setPumps(updatedPumps);
-  };
-
-  // Add useEffect to update totals when tank values change
-  useEffect(() => {
-    console.log('Tank values updated:', {
-      petrolClosing: petrolTank.closing,
-      dieselClosing: dieselTank.closing,
-      total: petrolTank.closing + dieselTank.closing
-    });
-  }, [petrolTank.closing, dieselTank.closing]);
-
-  // Add a function to calculate totals
- 
-
-  // Add a function to validate readings before saving
-  const validateReadings = () => {
-    const errors = [];
-
-    // Check if all pump closing values are entered
-    petrolPumps.forEach((pump, index) => {
-      if (pump.closing === 0) {
-        errors.push(`Petrol Pump P${index + 1} closing value is required`);
-      }
-    });
-
-    dieselPumps.forEach((pump, index) => {
-      if (pump.closing === 0) {
-        errors.push(`Diesel Pump D${index + 1} closing value is required`);
-      }
-    });
-
-    // Check if tank closing values are entered
-    if (petrolTank.closing === 0) {
-      errors.push('Petrol tank closing value is required');
-    }
-    if (dieselTank.closing === 0) {
-      errors.push('Diesel tank closing value is required');
-    }
-
-    return errors;
-  };
-
-  // Update handleUpdateReadings to include validation
-  const handleUpdateReadings = async () => {
-    try {
-      const validationErrors = validateReadings();
-      if (validationErrors.length > 0) {
-        setError(
-          <div>
-            <div className="text-lg font-semibold mb-2 text-red-600">Please fill in all required fields:</div>
-            <ul className="list-disc list-inside text-left text-red-500">
-              {validationErrors.map((err, idx) => (
-                <li key={idx}>{err}</li>
-              ))}
-            </ul>
-          </div>
-        );
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-      console.log('Saving readings...');
-
-      const readingsData = {
-        petrolPumps,
-        dieselPumps,
-        petrolTank,
-        dieselTank
-      };
-      console.log('Readings data to save:', readingsData);
-
-      // Save to Firestore
-      await saveReadings(readingsData);
-      console.log('Readings saved successfully');
-
-      // Update local state (Pump Operations only: clear closing for next entry and transfer closing to opening)
-      // After saving, do NOT use the old state for opening values. Use the just-entered closing values directly.
-      const updatedPetrolPumps = petrolPumps.map(pump => ({
-        opening: pump.closing, // always use the just-entered closing value
-        closing: 0,
-        sales: 0
-      }));
-      setPetrolPumps(updatedPetrolPumps);
-
-      const updatedDieselPumps = dieselPumps.map(pump => ({
-        opening: pump.closing,
-        closing: 0,
-        sales: 0
-      }));
-      setDieselPumps(updatedDieselPumps);
-
-      setPetrolTank(prev => ({
-        ...prev,
-        opening: prev.closing, // always use the just-entered closing value
-        closing: 0,
-        dipReading: 0,
-        meterReading: 0
-      }));
-      setDieselTank(prev => ({
-        ...prev,
-        opening: prev.closing,
-        closing: 0,
-        dipReading: 0,
-        meterReading: 0
-      }));
-
-      // Do NOT reload from Firestore after saving, just update local state
-
-      setIsEditing(false);
-      alert('Readings saved successfully!');
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to save readings';
-      console.error('Error saving readings:', err);
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Utility for rounding to 2 decimal places
-  const round2 = (val: number) => Number(val).toFixed(2);
 
   if (isLoading) {
     return (
@@ -376,20 +291,7 @@ const Readings = () => {
             {isEditing ? (
               <>
                 <button
-                  onClick={() => {
-                    setIsEditing(false);
-                    // Reload the current readings instead of calling loadReadings directly
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    getLatestReadings().then(readings => {
-                      if (readings) {
-                        setPetrolPumps(readings.petrolPumps);
-                        setDieselPumps(readings.dieselPumps);
-                        setPetrolTank(readings.petrolTank);
-                        setDieselTank(readings.dieselTank);
-                      }
-                    });
-                  }}
+                  onClick={() => setIsEditing(false)}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   Cancel
@@ -403,37 +305,7 @@ const Readings = () => {
               </>
             ) : (
               <button
-                onClick={() => {
-                  setIsEditing(true);
-                  // Clear closing values for all pumps
-                  setPetrolPumps(prevPumps => prevPumps.map(pump => ({
-                    ...pump,
-                    closing: 0,
-                    sales: 0
-                  })));
-                  setDieselPumps(prevPumps => prevPumps.map(pump => ({
-                    ...pump,
-                    closing: 0,
-                    sales: 0
-                  })));
-                  // Clear tank closing values and related fields
-                  setPetrolTank(prev => ({
-                    ...prev,
-                    closing: 0,
-                    dipReading: 0,
-                    meterReading: 0,
-                    tankSales: 0,
-                    variance: 0
-                  }));
-                  setDieselTank(prev => ({
-                    ...prev,
-                    closing: 0,
-                    dipReading: 0,
-                    meterReading: 0,
-                    tankSales: 0,
-                    variance: 0
-                  }));
-                }}
+                onClick={handleEditReadings}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
               >
                 Edit Readings
@@ -445,64 +317,57 @@ const Readings = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pump</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Opening Reading</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Closing Reading</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales (Liters)</th>
+                <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8 text-center">#</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Opening</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Closing</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diff</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {/* Pump Pairs */}
-              {petrolPumps.map((pump, index) => (
-                <React.Fragment key={`pair-${index}`}>
-                  {/* Petrol Pump */}
+              {petrolPumps.map((petrolPump, i) => (
+                <React.Fragment key={`row-${i}`}>
                   <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">P{index + 1} (Petrol)</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{round2(pump.opening)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-2 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 w-8 text-center">P{i + 1}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">{petrolPump.opening}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                       {isEditing ? (
-                        <div className="relative">
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={pump.closing}
-                            onChange={(e) => handleClosingChange(e.target.value, 'petrol', index)}
-                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm pr-8 py-2 px-3 md:py-2 md:px-3 text-base md:text-sm bg-white transition-all duration-150 ease-in-out min-w-0"
-                            placeholder="0.00"
-                            style={{ minWidth: 0 }}
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">L</span>
-                        </div>
+                        <input
+                          type="number"
+                          value={petrolPump.closing === 0 ? '' : petrolPump.closing}
+                          onChange={e => handleClosingChange(e.target.value, 'petrol', i)}
+                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base py-2 px-2 bg-white min-w-0 text-right"
+                          placeholder="0.00"
+                          style={{ minWidth: 0 }}
+                          inputMode="decimal"
+                        />
                       ) : (
-                        round2(pump.closing)
+                        petrolPump.closing
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{round2(pump.sales)}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{petrolPump.sales}</td>
                   </tr>
-                  {/* Diesel Pump */}
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">D{index + 1} (Diesel)</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{round2(dieselPumps[index].opening)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {isEditing ? (
-                        <div className="relative">
+                  {dieselPumps[i] && (
+                    <tr>
+                      <td className="px-2 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 w-8 text-center">D{i + 1}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">{dieselPumps[i].opening}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {isEditing ? (
                           <input
-                            type="text"
-                            inputMode="decimal"
-                            value={dieselPumps[index].closing}
-                            onChange={(e) => handleClosingChange(e.target.value, 'diesel', index)}
-                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm pr-8 py-2 px-3 md:py-2 md:px-3 text-base md:text-sm bg-white transition-all duration-150 ease-in-out min-w-0"
+                            type="number"
+                            value={dieselPumps[i].closing === 0 ? '' : dieselPumps[i].closing}
+                            onChange={e => handleClosingChange(e.target.value, 'diesel', i)}
+                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base py-2 px-2 bg-white min-w-0 text-right"
                             placeholder="0.00"
                             style={{ minWidth: 0 }}
+                            inputMode="decimal"
                           />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">L</span>
-                        </div>
-                      ) : (
-                        round2(dieselPumps[index].closing)
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{round2(dieselPumps[index].sales)}</td>
-                  </tr>
+                        ) : (
+                          dieselPumps[i].closing
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{dieselPumps[i].sales}</td>
+                    </tr>
+                  )}
                 </React.Fragment>
               ))}
             </tbody>
