@@ -6,6 +6,7 @@ import { ExclamationTriangleIcon, TrashIcon } from '@heroicons/react/24/outline'
 interface ClearDataTabProps {
   isLoading: boolean;
   error: string | null;
+  onClearExtra?: () => Promise<void>;
 }
 
 const DATA_COLLECTIONS = [
@@ -17,7 +18,7 @@ const DATA_COLLECTIONS = [
   { id: 'gensetReadings', name: 'Genset Readings' }
 ];
 
-export const ClearDataTab = ({ isLoading }: ClearDataTabProps) => {
+export const ClearDataTab = ({ isLoading, onClearExtra }: ClearDataTabProps) => {
   const [isClearing, setIsClearing] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [clearStatus, setClearStatus] = useState<{ success?: boolean; message?: string }>({});
@@ -36,6 +37,11 @@ export const ClearDataTab = ({ isLoading }: ClearDataTabProps) => {
         }
       }
       await Promise.all(deletePromises);
+
+      // Also clear tankLevels/current if provided
+      if (typeof onClearExtra === 'function') {
+        await onClearExtra();
+      }
 
       setShowConfirmDialog(false);
       setClearStatus({

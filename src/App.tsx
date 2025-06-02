@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import SignIn from './pages/SignIn';
 import Dashboard from './pages/Dashboard';
 import Readings from './pages/Readings';
@@ -8,6 +9,7 @@ import Settings from './pages/Settings';
 import TankRefill from './pages/TankRefill';
 import Layout from './components/Layout';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { listenForRefills, listenForSales } from './firebase/tankLevelController';
 
 // Protected Route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -25,6 +27,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
+  useEffect(() => {
+    const unsubRefills = listenForRefills();
+    const unsubSales = listenForSales();
+    return () => {
+      unsubRefills();
+      unsubSales();
+    };
+  }, []);
+
   return (
     <Router basename="/">
       <AuthProvider>

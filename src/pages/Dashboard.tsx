@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, getDoc, onSnapshot, collection, query, orderBy, limit, doc as firestoreDoc } from 'firebase/firestore';
+import { onSnapshot, collection, query, orderBy, limit, doc as firestoreDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import {
   Chart as ChartJS,
@@ -31,12 +31,6 @@ ChartJS.register(
   ArcElement
 );
 
-interface FuelPrices {
-  petrolPrice: number;
-  dieselPrice: number;
-  lastUpdated: string;
-}
-
 // Animated Tank Level Component
 interface TankLevelAnimatedProps {
   label: string;
@@ -46,29 +40,28 @@ interface TankLevelAnimatedProps {
   currentLiters: number;
 }
 
-const TankLevelAnimated: React.FC<TankLevelAnimatedProps> = ({ label, color, heightCm, currentLiters }) => {
-  // Even smaller SVG dimensions and thinner outline
-  const svgWidth = 36;
-  const svgHeight = 58;
-  const tankWall = 2; // half as thick as before
+const TankLevelAnimated: React.FC<TankLevelAnimatedProps> = ({ label, color, heightCm, capacityL, currentLiters }) => {
+  // Smaller SVG for compact look
+  const svgWidth = 48;
+  const svgHeight = 90;
+  const tankWall = 4;
   const tankInnerWidth = svgWidth - 2 * tankWall;
   const tankInnerHeight = svgHeight - 2 * tankWall;
   // Calculate fill percent
   const fillPercent = Math.max(0, Math.min(1, currentLiters / heightCm));
-  // Calculate fluid height in SVG
   const fluidHeight = fillPercent * tankInnerHeight;
   // Animated wave
   const waveId = useRef(`wave-${Math.random().toString(36).substr(2, 9)}`);
   const [waveOffset, setWaveOffset] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => {
-      setWaveOffset((prev) => (prev + 1) % 60);
-    }, 120);
+      setWaveOffset((prev) => (prev + 2) % 60);
+    }, 80);
     return () => clearInterval(interval);
   }, []);
   // Wave path
-  const waveAmplitude = 1.2;
-  const waveLength = 9;
+  const waveAmplitude = 2.5;
+  const waveLength = 14;
   const waveY = svgHeight - tankWall - fluidHeight;
   let wavePath = `M${tankWall},${waveY}`;
   for (let x = 0; x <= tankInnerWidth; x += 2) {
@@ -79,22 +72,87 @@ const TankLevelAnimated: React.FC<TankLevelAnimatedProps> = ({ label, color, hei
   wavePath += ` L${tankWall},${svgHeight - tankWall} Z`;
   // Current height in cm
   const currentCm = Math.max(0, Math.min(heightCm, currentLiters));
+  // Modern glassmorphism style with improved label alignment and color-respecting liquid
   return (
     <div className="flex flex-col items-center w-full max-w-xs">
-      <svg width="100%" height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto">
-        {/* Tank U-shape */}
-        <rect x={tankWall/2} y={tankWall/2} width={svgWidth-tankWall} height={svgHeight-tankWall} rx={svgWidth/4} fill="#f3f4f6" stroke="#2563eb" strokeWidth={tankWall} />
-        {/* Animated fluid with wave */}
-        <clipPath id={waveId.current}>
-          <rect x={tankWall} y={tankWall} width={tankInnerWidth} height={tankInnerHeight} rx={tankInnerWidth/2} />
-        </clipPath>
-        <path d={wavePath} fill={color} clipPath={`url(#${waveId.current})`} style={{ transition: 'd 0.3s' }} />
-        {/* Tank outline again for clarity, even thinner */}
-        <rect x={tankWall/2} y={tankWall/2} width={svgWidth-tankWall} height={svgHeight-tankWall} rx={svgWidth/4} fill="none" stroke="#2563eb" strokeWidth={tankWall/2} />
-        {/* Much smaller label and dip reading */}
-        <text x={svgWidth/2} y={tankWall+7} textAnchor="middle" fontSize="5" fill="#1e293b" fontWeight="bold">{label} Tank</text>
-        <text x={svgWidth/2} y={waveY-1} textAnchor="middle" fontSize="6" fill={color} fontWeight="bold">{currentCm.toFixed(1)} cm</text>
-      </svg>
+      <div className="relative w-full flex flex-col items-center">
+        {/* Tank label above tank, centered and bold */}
+        <div className="mb-1 w-full flex justify-center">
+          <span className="text-xs font-bold tracking-wide text-gray-800 bg-white/80 px-2 py-0.5 rounded shadow-sm border border-gray-200">
+            {label} Tank
+          </span>
+        </div>
+        <svg
+          width="100%"
+          height={svgHeight}
+          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+          className="w-full h-auto drop-shadow-xl"
+        >
+          {/* Tank body with glass effect */}
+          <rect
+            x={tankWall / 2}
+            y={tankWall / 2}
+            width={svgWidth - tankWall}
+            height={svgHeight - tankWall}
+            rx={svgWidth / 4}
+            fill="url(#glassGradient)"
+            stroke="#e5e7eb"
+            strokeWidth={tankWall}
+            style={{ filter: 'blur(0.5px)' }}
+          />
+          <defs>
+            <linearGradient id="glassGradient" x1="0" y1="0" x2="0" y2={svgHeight} gradientUnits="userSpaceOnUse">
+              <stop stopColor="#f3f4f6" stopOpacity="0.9" />
+              <stop offset="1" stopColor="#e0e7ef" stopOpacity="0.7" />
+            </linearGradient>
+            {/* Liquid color respects prop color, no white fade */}
+            <linearGradient id={`liquidGradient-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2={svgHeight} gradientUnits="userSpaceOnUse">
+              <stop stopColor={color} stopOpacity="0.95" />
+              <stop offset="1" stopColor={color} stopOpacity="0.7" />
+            </linearGradient>
+          </defs>
+          {/* Animated fluid with wave */}
+          <clipPath id={waveId.current}>
+            <rect x={tankWall} y={tankWall} width={tankInnerWidth} height={tankInnerHeight} rx={tankInnerWidth / 2} />
+          </clipPath>
+          <path
+            d={wavePath}
+            fill={`url(#liquidGradient-${color.replace('#','')})`}
+            clipPath={`url(#${waveId.current})`}
+            style={{ transition: 'd 0.3s' }}
+          />
+          {/* Tank outline for clarity */}
+          <rect
+            x={tankWall / 2}
+            y={tankWall / 2}
+            width={svgWidth - tankWall}
+            height={svgHeight - tankWall}
+            rx={svgWidth / 4}
+            fill="none"
+            stroke="#2563eb"
+            strokeWidth={tankWall / 2}
+          />
+          {/* Dip reading, centered inside tank, above the liquid */}
+          <text
+            x={svgWidth / 2}
+            y={Math.max(waveY - 6, tankWall + 14)}
+            textAnchor="middle"
+            fontSize="8"
+            fill={color}
+            fontWeight="bold"
+            style={{ textShadow: '0 1px 2px #fff' }}
+          >
+            {currentCm.toFixed(1)} cm
+          </text>
+        </svg>
+        {/* Modern info card below tank, always aligned and readable */}
+        <div className="mt-1 w-full flex flex-col items-center">
+          <div className="w-11/12 bg-white/80 backdrop-blur-md rounded-xl shadow px-2 py-1 flex flex-col items-center border border-gray-200">
+            <span className="text-[10px] text-gray-500 font-medium">Capacity: {capacityL} L</span>
+            <span className="text-[11px] text-gray-700 font-semibold">{((currentLiters / heightCm) * capacityL).toFixed(0)} L</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -127,12 +185,28 @@ const Dashboard = () => {
   useEffect(() => {
     setIsLoading(true);
     setError(null);
+    // Listen for live tank levels from /tankLevels/current
+    const tankLevelsRef = firestoreDoc(db, 'tankLevels', 'current');
+    const unsubscribeTankLevels = onSnapshot(tankLevelsRef, (docSnap) => {
+      if (!docSnap.exists()) {
+        setTodayStats(prev => ({ ...prev, petrolDipReading: 0, dieselDipReading: 0 }));
+        setIsLoading(false);
+        return;
+      }
+      const tankLevels = docSnap.data();
+      setTodayStats(prev => ({
+        ...prev,
+        petrolDipReading: tankLevels.petrol || 0,
+        dieselDipReading: tankLevels.diesel || 0
+      }));
+      setIsLoading(false);
+    });
     // Listen for latest readings (most recent document in 'readings')
     const readingsQuery = query(collection(db, 'readings'), orderBy('date', 'desc'), limit(1));
     const unsubscribeReadings = onSnapshot(readingsQuery, async (snapshot) => {
       const docSnap = snapshot.docs[0];
       if (!docSnap) {
-        setTodayStats(prev => ({ ...prev, petrolDipReading: 0, dieselDipReading: 0, pumpSales: { petrol: [0,0,0,0], diesel: [0,0,0,0] }, petrolSales: 0, dieselSales: 0, totalSales: 0, fuelVolume: 0, transactions: 0, variance: 0, petrolVariance: 0, dieselVariance: 0 }));
+        setTodayStats(prev => ({ ...prev, pumpSales: { petrol: [0,0,0,0], diesel: [0,0,0,0] }, petrolSales: 0, dieselSales: 0, totalSales: 0, fuelVolume: 0, transactions: 0, variance: 0, petrolVariance: 0, dieselVariance: 0 }));
         setIsLoading(false);
         return;
       }
@@ -153,16 +227,14 @@ const Dashboard = () => {
         const totalDieselSales = dieselPumpSales.reduce((sum: number, sales: number) => sum + sales, 0);
         const totalVolume = totalPetrolSales + totalDieselSales;
         const totalSales = (totalPetrolSales * petrolPrice) + (totalDieselSales * dieselPrice);
-        // Calculate tank levels as percentages
-        const petrolTankLevel = (readings.petrolTank?.closing || 0) / 10000 * 100;
-        const dieselTankLevel = (readings.dieselTank?.closing || 0) / 10000 * 100;
         // Calculate variances
         const petrolVariance = readings.petrolTank?.variance || 0;
         const dieselVariance = readings.dieselTank?.variance || 0;
         const totalVariance = petrolVariance + dieselVariance;
         // Estimate transactions (assuming average transaction of 20L)
         const estimatedTransactions = Math.round(totalVolume / 20);
-        setTodayStats({
+        setTodayStats(prev => ({
+          ...prev,
           totalSales,
           fuelVolume: totalVolume,
           transactions: estimatedTransactions,
@@ -174,14 +246,8 @@ const Dashboard = () => {
           pumpSales: {
             petrol: petrolPumpSales,
             diesel: dieselPumpSales
-          },
-          tankLevels: {
-            petrol: petrolTankLevel,
-            diesel: dieselTankLevel
-          },
-          petrolDipReading: readings.petrolTank?.meterReading || 0,
-          dieselDipReading: readings.dieselTank?.meterReading || 0
-        });
+          }
+        }));
         setIsLoading(false);
       });
       // Clean up prices listener when readings change
@@ -189,6 +255,7 @@ const Dashboard = () => {
     });
     // Clean up on unmount
     return () => {
+      unsubscribeTankLevels();
       unsubscribeReadings();
     };
   }, []);

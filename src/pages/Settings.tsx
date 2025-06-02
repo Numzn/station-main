@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, setDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type { FuelPrices, User, SystemProfile, SettingsTab } from '../types/settings';
 import { FuelPricesTab } from '../components/settings/FuelPricesTab';
@@ -13,6 +13,7 @@ import {
   Cog6ToothIcon, 
   TrashIcon 
 } from '@heroicons/react/24/outline';
+import { listenForRefills, listenForSales } from '../firebase/tankLevelController';
 
 const TABS = [
   { key: 'prices', label: 'Fuel Prices', icon: CurrencyDollarIcon, description: 'Manage fuel prices' },
@@ -194,6 +195,11 @@ const Settings = () => {
                 <ClearDataTab
                   isLoading={isLoading}
                   error={error}
+                  onClearExtra={async () => {
+                    // Reset tankLevels/current to zero
+                    const tankRef = doc(db, 'tankLevels', 'current');
+                    await setDoc(tankRef, { petrol: 0, diesel: 0, lastUpdated: new Date().toISOString() }, { merge: true });
+                  }}
                 />
               )}
             </div>

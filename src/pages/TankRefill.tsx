@@ -6,6 +6,8 @@ import { TANK_CAPACITY, TANK_MAX_DIP } from '../config/tankConstants';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Skeleton from '../components/LoadingSkeleton';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const TankRefillPage = () => {
   const { user } = useAuth();
@@ -98,14 +100,14 @@ const TankRefillPage = () => {
   const handleSave = async () => {
     const validationError = validateRefill();
     if (validationError && validationError !== 'warn') {
-      setError(validationError); // Show error to user
+      setError(validationError);
       return;
     }
     // Show warning but proceed if 'warn'
     if (validationError === 'warn') {
       setError('Warning: Large variance detected. Please verify measurements.');
     } else {
-      setError(null); // Clear any previous error
+      setError(null);
     }
     try {
       setLoading(true);
@@ -114,6 +116,21 @@ const TankRefillPage = () => {
         photo,
         timestamp: new Date().toISOString(),
       } as TankRefill);
+
+      // --- Update /tankLevels/current with the new final dip ---
+      if (currentRefill.tankType && typeof currentRefill.finalDip === 'number') {
+        const tankLevelsRef = doc(db, 'tankLevels', 'current');
+        await setDoc(
+          tankLevelsRef,
+          {
+            [currentRefill.tankType]: currentRefill.finalDip,
+            lastUpdated: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      }
+      // --- End update ---
+
       const newRefills = await getLatestTankRefills(10);
       setRecentRefills(newRefills);
       setCurrentRefill({
