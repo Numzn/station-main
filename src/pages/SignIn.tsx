@@ -83,11 +83,13 @@ const SignIn = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
-      <ParticlesBackground />
-      {/* Gradient overlay for enhanced background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/60 via-black/60 to-cyan-800/60 backdrop-blur-[2px] z-0" />
-      <div className="relative max-w-md w-full space-y-8 bg-black/30 backdrop-blur-sm p-8 rounded-lg shadow-xl border border-cyan-500/30" style={{ zIndex: 1 }}>
+    <div className="fixed inset-0 min-h-screen w-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <div className="fixed inset-0 z-0">
+        <ParticlesBackground />
+        {/* Gradient overlay for enhanced background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/60 via-black/60 to-cyan-800/60 backdrop-blur-[2px]" />
+      </div>
+      <div className="relative max-w-md w-full space-y-8 bg-black/30 backdrop-blur-sm p-8 rounded-lg shadow-xl border border-cyan-500/30 z-10">
         <div className="flex flex-col items-center">
           <FaUserCircle className="text-cyan-400 text-6xl mb-2" />
           <h2 className="mt-2 text-center text-3xl font-extrabold text-cyan-400">
