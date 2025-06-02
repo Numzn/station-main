@@ -208,74 +208,15 @@ const TankRefillPage = () => {
   // Helper: Color by tank type
   const tankColor = currentRefill.tankType === 'petrol' ? 'green' : 'purple';
 
+  // Modern step tab UI
+  const steps = [
+    { key: 'prep', label: '1. Preparation', icon: '📝' },
+    { key: 'offload', label: '2. Offload', icon: '⛽' },
+    { key: 'review', label: '3. Review', icon: '✅' },
+  ];
+
   // Step 1: Delivery Preparation (Initial Dip & Expected Delivery)
-  const renderPrepStep = () => (
-    <div className="bg-white shadow rounded-lg p-4 sm:p-6" role="form" aria-label="Tank Refill Form">
-      <h2 className="text-lg font-medium text-gray-900 mb-4">Delivery Preparation</h2>
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="tankType" className="text-sm font-medium text-gray-700">Tank Type</label>
-          <select
-            id="tankType"
-            value={currentRefill.tankType}
-            onChange={e => setCurrentRefill(prev => ({ ...prev, tankType: e.target.value as 'petrol' | 'diesel' }))}
-            className={`rounded-md border-gray-300 shadow-sm focus:border-${tankColor}-500 focus:ring-${tankColor}-500 bg-${tankColor}-50 px-3 py-2 text-base`}
-            aria-label="Select tank type"
-          >
-            <option value="petrol">Petrol Tank</option>
-            <option value="diesel">Diesel Tank</option>
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="invoiceNumber" className="text-sm font-medium text-gray-700">Invoice Number</label>
-          <input
-            id="invoiceNumber"
-            type="text"
-            value={currentRefill.invoiceNumber}
-            onChange={e => setCurrentRefill(prev => ({ ...prev, invoiceNumber: e.target.value }))}
-            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-base"
-            placeholder="Enter invoice number"
-            aria-label="Invoice number input"
-            autoComplete="off"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="initialDip" className="text-sm font-medium text-gray-700">Initial Dip (L)</label>
-          <input
-            id="initialDip"
-            type="number"
-            value={currentRefill.initialDip || ''}
-            onChange={e => setCurrentRefill(prev => ({ ...prev, initialDip: Number(e.target.value) }))}
-            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-base"
-            placeholder="Enter initial dip reading (liters)"
-            aria-label="Initial dip measurement in liters"
-            inputMode="decimal"
-            min="0"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">Expected Delivery (L)</label>
-          <input
-            type="number"
-            value={currentRefill.expectedDelivery || ''}
-            onChange={e => setCurrentRefill(prev => ({ ...prev, expectedDelivery: Number(e.target.value) }))}
-            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-base"
-            placeholder="Enter expected delivery volume (liters)"
-            aria-label="Expected delivery volume in liters"
-            inputMode="decimal"
-            min="0"
-          />
-        </div>
-      </div>
-      <button
-        className={`mt-6 w-full py-3 px-4 rounded-md text-white text-lg ${tankColor === 'green' ? 'bg-green-600 hover:bg-green-700' : 'bg-purple-600 hover:bg-purple-700'} font-semibold transition-all`}
-        onClick={handlePrepLock}
-        disabled={!(Number(currentRefill.initialDip) > 0 && Number(currentRefill.expectedDelivery) > 0 && currentRefill.invoiceNumber)}
-      >
-        Start Offload
-      </button>
-    </div>
-  );
+  // (renderPrepStep removed because it was unused)
 
   // Step 2: Delivery Completion (Final Dip)
   const renderOffloadStep = () => (
@@ -401,7 +342,111 @@ const TankRefillPage = () => {
 
   return (
     <div className="space-y-6">
-      {step === 'prep' && renderPrepStep()}
+      {/* Modern Step Tabs */}
+      <div className="flex flex-wrap gap-2 md:gap-4 justify-center mb-2">
+        {steps.map(({ key, label, icon }) => (
+          <button
+            key={key}
+            type="button"
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-sm shadow-sm transition-all
+              ${step === key
+                ? 'bg-green-600 text-white scale-105 shadow-md'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-green-50 hover:text-green-700'}
+            `}
+            style={{ minWidth: 120 }}
+            onClick={() => setStep(key as typeof step)}
+            disabled={step === key}
+            aria-current={step === key ? 'step' : undefined}
+          >
+            <span className="text-lg">{icon}</span> {label}
+          </button>
+        ))}
+      </div>
+      {/* Step Content */}
+      {step === 'prep' && (
+        <div className="bg-white shadow rounded-lg p-4 sm:p-8" role="form" aria-label="Tank Refill Form">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="inline-block text-green-600">📝</span> Delivery Preparation
+          </h2>
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex-1 flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <label htmlFor="tankType" className="text-sm font-medium text-gray-700">Tank Type</label>
+                <select
+                  id="tankType"
+                  value={currentRefill.tankType}
+                  onChange={e => setCurrentRefill(prev => ({ ...prev, tankType: e.target.value as 'petrol' | 'diesel' }))}
+                  className={`rounded-md border-gray-300 shadow-sm focus:border-${tankColor}-500 focus:ring-${tankColor}-500 bg-${tankColor}-50 px-3 py-2 text-base`}
+                  aria-label="Select tank type"
+                >
+                  <option value="petrol">Petrol Tank</option>
+                  <option value="diesel">Diesel Tank</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="invoiceNumber" className="text-sm font-medium text-gray-700">Invoice Number</label>
+                <input
+                  id="invoiceNumber"
+                  type="text"
+                  value={currentRefill.invoiceNumber}
+                  onChange={e => setCurrentRefill(prev => ({ ...prev, invoiceNumber: e.target.value }))}
+                  className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-base"
+                  placeholder="Enter invoice number"
+                  aria-label="Invoice number input"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="initialDip" className="text-sm font-medium text-gray-700">Initial Dip (L)</label>
+                <input
+                  id="initialDip"
+                  type="number"
+                  value={currentRefill.initialDip || ''}
+                  onChange={e => setCurrentRefill(prev => ({ ...prev, initialDip: Number(e.target.value) }))}
+                  className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-base"
+                  placeholder="Enter initial dip reading (liters)"
+                  aria-label="Initial dip measurement in liters"
+                  inputMode="decimal"
+                  min="0"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-700">Expected Delivery (L)</label>
+                <input
+                  type="number"
+                  value={currentRefill.expectedDelivery || ''}
+                  onChange={e => setCurrentRefill(prev => ({ ...prev, expectedDelivery: Number(e.target.value) }))}
+                  className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 text-base"
+                  placeholder="Enter expected delivery volume (liters)"
+                  aria-label="Expected delivery volume in liters"
+                  inputMode="decimal"
+                  min="0"
+                />
+              </div>
+            </div>
+            {/* Modern Info Card */}
+            <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 rounded-xl shadow-inner p-6 border border-green-100">
+              <div className="text-5xl mb-2">⛽</div>
+              <div className="text-lg font-bold text-gray-800 mb-1">Tank Preparation</div>
+              <div className="text-sm text-gray-500 mb-2 text-center">Fill in the details for the tank refill. Double-check the tank type and invoice number before proceeding.</div>
+              <ul className="text-xs text-gray-600 list-disc list-inside text-left">
+                <li>Ensure the correct tank is selected</li>
+                <li>Record the initial dip before offloading</li>
+                <li>Enter the expected delivery volume</li>
+                <li>Attach invoice number for traceability</li>
+              </ul>
+            </div>
+          </div>
+          <button
+            className={`mt-8 w-full py-3 px-4 rounded-md text-white text-lg ${tankColor === 'green' ? 'bg-green-600 hover:bg-green-700' : 'bg-purple-600 hover:bg-purple-700'} font-semibold transition-all`}
+            onClick={handlePrepLock}
+            disabled={!(Number(currentRefill.initialDip) > 0 && Number(currentRefill.expectedDelivery) > 0 && currentRefill.invoiceNumber)}
+          >
+            Start Offload
+          </button>
+        </div>
+      )}
       {step === 'offload' && renderOffloadStep()}
       {step === 'review' && renderReviewStep()}
       {/* Audit Log (Recent Refills) */}
