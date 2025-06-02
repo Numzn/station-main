@@ -13,7 +13,6 @@ import {
   Cog6ToothIcon, 
   TrashIcon 
 } from '@heroicons/react/24/outline';
-import { listenForRefills, listenForSales } from '../firebase/tankLevelController';
 
 const TABS = [
   { key: 'prices', label: 'Fuel Prices', icon: CurrencyDollarIcon, description: 'Manage fuel prices' },
@@ -117,29 +116,25 @@ const Settings = () => {
         </div>
 
         <div className="bg-white shadow rounded-lg">
-          {/* Tabs */}
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8 px-6" aria-label="Settings">
+          {/* Modern Tabs */}
+          <div className="border-b border-gray-200 bg-gradient-to-r from-blue-50/60 to-purple-50/60 rounded-t-lg px-2 pt-2">
+            <nav className="flex flex-wrap gap-2 md:gap-4 justify-start md:justify-center" aria-label="Settings">
               {TABS.map(tab => {
                 const Icon = tab.icon;
+                const isActive = activeTab === tab.key;
                 return (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
                     className={`
-                      group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm
-                      ${activeTab === tab.key
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }
+                      group flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-semibold text-sm shadow-sm
+                      ${isActive
+                        ? 'bg-blue-600 text-white shadow-md scale-105'
+                        : 'bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-700 border border-gray-200'}
                     `}
+                    style={{ minWidth: 120 }}
                   >
-                    <Icon 
-                      className={`
-                        -ml-0.5 mr-2 h-5 w-5 
-                        ${activeTab === tab.key ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'}
-                      `}
-                    />
+                    <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-blue-400 group-hover:text-blue-600'}`} />
                     <span>{tab.label}</span>
                   </button>
                 );
