@@ -10,6 +10,7 @@ import TankRefill from './pages/TankRefill';
 import Layout from './components/Layout';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { listenForRefills, listenForSales } from './firebase/tankLevelController';
+import KatimaEngenTabs from './components/KatimaEngenTabs';
 
 // Protected Route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -53,6 +54,7 @@ function App() {
                   <Route path="tank-refill" element={<TankRefill />} />
                   <Route path="shift-roster" element={<ShiftRoster />} />
                   <Route path="settings" element={<Settings />} />
+                  <Route path="katima-engen" element={<KatimaEngenTabs />} />
                 </Routes>
               </ProtectedRoute>
             }

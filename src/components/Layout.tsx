@@ -10,6 +10,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import Skeleton from './LoadingSkeleton';
+import { FaTablet } from 'react-icons/fa';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -30,6 +31,7 @@ const Layout = ({ children }: LayoutProps) => {
     { name: 'Readings', href: '/dashboard/readings', icon: ChartBarIcon },
     { name: 'Genset', href: '/dashboard/genset', icon: CogIcon },
     { name: 'Tank Refill', href: '/dashboard/tank-refill', icon: ChartBarIcon },
+    { name: 'Katima Engen', href: '/dashboard/katima-engen', icon: FaTablet }, // ADDED
     { name: 'Shift Roster', href: '/dashboard/shift-roster', icon: CalendarIcon },
     { name: 'Settings', href: '/dashboard/settings', icon: CogIcon },
   ];
