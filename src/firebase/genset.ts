@@ -8,6 +8,8 @@ export interface GensetReading {
   fuelAdded: number; // Always 20L
   fuelConsumptionRate: number;
   operator: string;
+  gensetStatus: 'running' | 'stopped'; // ADDED
+  powerOutageStart: string; // ADDED, ISO string
 }
 
 const COLLECTION_NAME = 'gensetReadings';

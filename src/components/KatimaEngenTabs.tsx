@@ -8,10 +8,14 @@ function parseCSV(csv: string): string[][] {
     .map(line => line.split(','));
 }
 
-const COLUMN_COUNT = 10;
+const COLUMN_COUNT = 11;
 const DIESEL_ROWS = 223;
 const PETROL_ROWS = 222;
-const COLUMN_HEADERS = Array.from({ length: COLUMN_COUNT }, (_, i) => `Column ${i}`);
+const COLUMN_HEADERS = [
+  '#',
+  ...Array.from({ length: 9 }, (_, i) => `${i}`),
+  '9'
+];
 
 const KatimaEngenTabs: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'diesel' | 'petrol'>('diesel');
@@ -34,17 +38,21 @@ const KatimaEngenTabs: React.FC = () => {
 
   // Render table rows (reference + uploaded)
   const renderRows = (rowCount: number, extraRows: string[][]) => {
+    const rowBg = activeTab === 'petrol' ? 'bg-green-200 even:bg-green-300' : 'bg-purple-200 even:bg-purple-300';
+    const textColor = activeTab === 'petrol' ? 'text-green-900' : 'text-purple-900';
     const referenceRows = Array.from({ length: rowCount }, (_, i) => (
-      <tr key={`ref-${i}`} className="bg-white even:bg-gray-50">
-        {COLUMN_HEADERS.map((col, j) => (
-          <td key={j} className="px-2 py-1 border text-xs text-gray-700">{col === 'Column 0' ? i : ''}</td>
+      <tr key={`ref-${i}`} className={`${rowBg}`}>
+        <td className={`px-2 py-1 border text-xs font-semibold ${textColor}`}>{i + 1}</td>
+        {Array.from({ length: COLUMN_COUNT - 1 }, (_, j) => (
+          <td key={j} className={`px-2 py-1 border text-xs ${textColor}`}></td>
         ))}
       </tr>
     ));
     const uploadedRows = extraRows.map((row, i) => (
-      <tr key={`csv-${i}`} className="bg-blue-50 even:bg-blue-100">
-        {Array.from({ length: COLUMN_COUNT }, (_, j) => (
-          <td key={j} className="px-2 py-1 border text-xs text-blue-700">{row[j] || ''}</td>
+      <tr key={`csv-${i}`} className={`${activeTab === 'petrol' ? 'bg-green-400 even:bg-green-500' : 'bg-purple-400 even:bg-purple-500'}`}>
+        <td className={`px-2 py-1 border text-xs font-semibold ${textColor}`}>{row[0] || ''}</td>
+        {Array.from({ length: COLUMN_COUNT - 1 }, (_, j) => (
+          <td key={j} className={`px-2 py-1 border text-xs ${textColor}`}>{row[j + 1] || ''}</td>
         ))}
       </tr>
     ));
@@ -52,7 +60,13 @@ const KatimaEngenTabs: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-2 sm:p-4">
+    <div
+      className={`w-full max-w-7xl mx-auto p-2 sm:p-4 transition-colors duration-300 ${
+        activeTab === 'petrol'
+          ? 'bg-gradient-to-br from-green-50 via-green-100 to-green-50'
+          : 'bg-gradient-to-br from-purple-50 via-purple-100 to-purple-50'
+      } min-h-[80vh] rounded-2xl`}
+    >
       <div className="flex gap-2 mb-4">
         <button
           className={`px-4 py-2 rounded-t-lg font-semibold text-sm transition-all border-b-2 ${activeTab === 'diesel' ? 'border-blue-600 text-blue-700 bg-white' : 'border-transparent text-gray-500 bg-gray-100 hover:text-blue-600'}`}
@@ -81,10 +95,10 @@ const KatimaEngenTabs: React.FC = () => {
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full border text-xs">
-            <thead className="bg-gray-100">
+            <thead className={activeTab === 'petrol' ? 'bg-green-700' : 'bg-purple-700'}>
               <tr>
                 {COLUMN_HEADERS.map((col, i) => (
-                  <th key={i} className="px-2 py-1 border text-gray-800 font-semibold whitespace-nowrap">{col}</th>
+                  <th key={i} className="px-2 py-1 border text-white font-semibold whitespace-nowrap">{col}</th>
                 ))}
               </tr>
             </thead>
